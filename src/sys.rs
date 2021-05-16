@@ -3,6 +3,10 @@
 
 use std::{ffi::c_void, os::raw::c_char};
 
+//
+// oslog
+//
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct os_log_s {
@@ -34,6 +38,44 @@ extern "C" {
     pub fn wrapped_os_log_default(log: os_log_t, message: *const c_char);
     pub fn wrapped_os_log_error(log: os_log_t, message: *const c_char);
     pub fn wrapped_os_log_fault(log: os_log_t, message: *const c_char);
+}
+
+//
+// Signpost
+//
+
+/// Provided by the OS.
+extern "C" {
+    pub fn os_signpost_id_generate(log: os_log_t) -> os_signpost_id_t;
+    pub fn os_signpost_id_make_with_pointer(log: os_log_t, ptr: *const c_void) -> os_signpost_id_t;
+}
+
+pub type os_signpost_id_t = u64;
+pub const OS_SIGNPOST_ID_NULL: os_signpost_id_t = 0;
+pub const OS_SIGNPOST_ID_INVALID: os_signpost_id_t = u64::MAX; // ~0, all 1
+pub const OS_SIGNPOST_ID_EXCLUSIVE: os_signpost_id_t = 0xEEEEB0B5B2B2EEEE;
+
+/// Wrappers defined in wrapper.c because most of the os_log_* APIs are macros.
+extern "C" {
+    // pub fn wrapped_os_signpost_event_emit(
+    //     log: os_log_t,
+    //     spid: os_signpost_id_t,
+    //     name: *const c_char,
+    //     message: *const c_char,
+    // );
+    pub fn wrapped_os_signpost_event_emit(
+        log: os_log_t,
+        spid: os_signpost_id_t,
+        name: *const c_char,
+        format: *const c_char,
+        message: *const c_char,
+    );
+    // pub fn os_signpost_event_emit(
+    //     log: os_log_t,
+    //     spid: os_signpost_id_t,
+    //     name: *const u8,
+    //     message: *const c_char,
+    // );
 }
 
 #[cfg(test)]

@@ -1,3 +1,4 @@
+mod signpost;
 mod sys;
 
 #[cfg(feature = "logger")]
@@ -7,10 +8,10 @@ mod logger;
 pub use logger::OsLogger;
 
 use crate::sys::*;
-use std::ffi::{c_void, CString};
+use std::ffi::{c_void, CStr, CString};
 
 #[inline]
-fn to_cstr(message: &str) -> CString {
+pub fn to_cstr(message: &str) -> CString {
     let fixed = message.replace('\0', "(null)");
     CString::new(fixed).unwrap()
 }
@@ -107,8 +108,40 @@ impl OsLog {
     pub fn level_is_enabled(&self, level: Level) -> bool {
         unsafe { os_log_type_enabled(self.inner, level as u8) }
     }
+
+    pub fn signpost_event(&self, spid: &OSSignpostID, name: &CStr, format: &CStr, message: &CStr) {
+        unsafe {
+            // wrapped_os_signpost_event_emit(self.inner, spid.inner, name.as_ptr(), message.as_ptr())
+            // wrapped_os_signpost_event_emit(self.inner, spid.inner, name.as_ptr(), message.as_ptr())
+            wrapped_os_signpost_event_emit(
+                self.inner,
+                spid.inner,
+                name.as_ptr(),
+                format.as_ptr(),
+                message.as_ptr(),
+            )
+        }
+    }
 }
 
+//
+// Signpost
+//
+
+pub struct OSSignpostID {
+    inner: os_signpost_id_t,
+}
+
+impl OSSignpostID {
+    pub fn generate(log: &OsLog) -> OSSignpostID {
+        OSSignpostID {
+            inner: unsafe { os_signpost_id_generate(log.inner) },
+        }
+    }
+}
+
+unsafe impl Send for OSSignpostID {}
+unsafe impl Sync for OSSignpostID {}
 #[cfg(test)]
 mod tests {
     use super::*;
