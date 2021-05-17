@@ -130,10 +130,34 @@ pub struct OSSignpostID {
     inner: os_signpost_id_t,
 }
 
+impl Default for OSSignpostID {
+    fn default() -> Self {
+        OSSignpostID {
+            inner: OS_SIGNPOST_ID_EXCLUSIVE,
+        }
+    }
+}
 impl OSSignpostID {
+    /// Creates a signpost identifier that's unique among signposts logged to
+    /// a specified log.
     pub fn generate(log: &OsLog) -> OSSignpostID {
         OSSignpostID {
             inner: unsafe { os_signpost_id_generate(log.inner) },
+        }
+    }
+
+    /// Creates a signpost identifier that's unique among signposts logging to
+    /// the specified log, using a pointer value to generate the unique value.
+    ///
+    /// Note: don't use this function if the activity needs to cross process
+    /// boundaries.
+    pub fn generate_with_pointer<T>(log: &OsLog, object: T) -> OSSignpostID
+    where
+        T: ptrplus::AsPtr,
+    {
+        let ptr = object.as_ptr() as *const c_void;
+        OSSignpostID {
+            inner: unsafe { os_signpost_id_make_with_pointer(log.inner, ptr) },
         }
     }
 }
@@ -144,6 +168,7 @@ unsafe impl Sync for OSSignpostID {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use c_str_macro::c_str;
 
     #[test]
     fn test_subsystem_interior_null() {
@@ -207,5 +232,65 @@ mod tests {
         log.default("Default");
         log.error("Error");
         log.fault("Fault");
+    }
+
+    #[test]
+    /// If you were to profile this code run with `xcrun xctrace --template
+    /// SomeTemplateWithOSSignpost` you get the following table of results in
+    /// Xcode instruments:
+    ///
+    /// | Process           | Subsystem      | Category     | Name                       | Signpost ID              | Message                       |
+    /// | ---               | ---            | ---          | ---                        | ---                      | ---                           |
+    /// | simple-signposter | com.signposter | the-category | the-default-signpost-name  | OS_SIGNPOST_ID_EXCLUSIVE | the-default-signpost-message  |
+    /// | simple-signposter | com.signposter | the-category | the-default-signpost-name2 | OS_SIGNPOST_ID_EXCLUSIVE | the-default-signpost-message2 |
+    /// | simple-signposter | com.signposter | the-category | the-signpost-name          | 0x01                     | the-default-signpost-message  |
+    /// | simple-signposter | com.signposter | the-category | the-signpost-name2         | 0x01                     | the-default-signpost-message2 |
+    /// | simple-signposter | com.signposter | the-category | the-ref-signpost-name      | 0x74f22b67ffaee5d0       | the-default-signpost-message  |
+    /// | simple-signposter | com.signposter | the-category | the-ref-signpost-name2     | 0x74f22b67ffaee5d0       | the-default-signpost-message2 |
+    fn test_signpost_event_with_various_id_sources() {
+        let log = OsLog::new("com.signposter", "the-category");
+
+        let signpost_id = OSSignpostID::default();
+        log.signpost_event(
+            &signpost_id,
+            c_str!("the-default-signpost-name"),
+            c_str!("%{public}s"),
+            c_str!("the-default-signpost-message"),
+        );
+        log.signpost_event(
+            &signpost_id,
+            c_str!("the-default-signpost-name2"),
+            c_str!("%{public}s"),
+            c_str!("the-default-signpost-message2"),
+        );
+
+        let signpost_id = OSSignpostID::generate(&log);
+        log.signpost_event(
+            &signpost_id,
+            c_str!("the-signpost-name"),
+            c_str!("%{public}s"),
+            c_str!("the-signpost-message"),
+        );
+        log.signpost_event(
+            &signpost_id,
+            c_str!("the-signpost-name2"),
+            c_str!("%{public}s"),
+            c_str!("the-signpost-message2"),
+        );
+
+        let ref_object = String::from("reference-object");
+        let signpost_id = OSSignpostID::generate_with_pointer(&log, &ref_object);
+        log.signpost_event(
+            &signpost_id,
+            c_str!("the-ref-signpost-name"),
+            c_str!("%{public}s"),
+            c_str!("the-ref-signpost-message"),
+        );
+        log.signpost_event(
+            &signpost_id,
+            c_str!("the-ref-signpost-name2"),
+            c_str!("%{public}s"),
+            c_str!("the-ref-signpost-message2"),
+        );
     }
 }
