@@ -1,40 +1,6 @@
 #include <os/log.h>
 #include <os/signpost.h>
 
-#define to_literal(lit) #lit
-#define wrap(log, spid, name, message) \
-    void wrapped(os_log_t log, os_signpost_id_t spid, const char* message) { \
-        os_signpost_event_emit(log, spid, name, "%{public}s", message); \
-    }
-
-os_log_t wrapped_get_default_log() {
-    return OS_LOG_DEFAULT;
-}
-
-void wrapped_os_log_with_type(os_log_t log, os_log_type_t type, const char* message) {
-    os_log_with_type(log, type, "%{public}s", message);
-}
-
-void wrapped_os_log_debug(os_log_t log, const char* message) {
-    os_log_debug(log, "%{public}s", message);
-}
-
-void wrapped_os_log_info(os_log_t log, const char* message) {
-    os_log_info(log, "%{public}s", message);
-}
-
-void wrapped_os_log_default(os_log_t log, const char* message) {
-    os_log(log, "%{public}s", message);
-}
-
-void wrapped_os_log_error(os_log_t log, const char* message) {
-    os_log_error(log, "%{public}s", message);
-}
-
-void wrapped_os_log_fault(os_log_t log, const char* message) {
-    os_log_fault(log, "%{public}s", message);
-}
-
 // -- source: os/trace_base.h: lines 94-101
 //
 // modification: avoid using OS_LOG_STRING which forces static const strings
@@ -89,9 +55,3 @@ void wrapped_os_log_fault(os_log_t log, const char* message) {
 
 // --
 
-
-void wrapped_os_signpost_event_emit(os_log_t log, os_signpost_id_t spid, const char* name, const char* format, const char* message) {
-    printf("%s", format);
-    mod_os_signpost_emit_with_type(log, OS_SIGNPOST_EVENT, spid, name, "%s", message);
-}
-    // _os_signpost_emit_with_name_impl(&__dso_handle, log, OS_SIGNPOST_EVENT, spid, name, format, message, strlen(message));

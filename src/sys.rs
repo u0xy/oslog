@@ -57,12 +57,6 @@ pub const OS_SIGNPOST_ID_EXCLUSIVE: os_signpost_id_t = 0xEEEEB0B5B2B2EEEE;
 
 /// Wrappers defined in wrapper.c because most of the os_log_* APIs are macros.
 extern "C" {
-    // pub fn wrapped_os_signpost_event_emit(
-    //     log: os_log_t,
-    //     spid: os_signpost_id_t,
-    //     name: *const c_char,
-    //     message: *const c_char,
-    // );
     pub fn wrapped_os_signpost_event_emit(
         log: os_log_t,
         spid: os_signpost_id_t,
@@ -70,12 +64,6 @@ extern "C" {
         format: *const c_char,
         message: *const c_char,
     );
-    // pub fn os_signpost_event_emit(
-    //     log: os_log_t,
-    //     spid: os_signpost_id_t,
-    //     name: *const u8,
-    //     message: *const c_char,
-    // );
 }
 
 #[cfg(test)]

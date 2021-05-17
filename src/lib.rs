@@ -111,8 +111,6 @@ impl OsLog {
 
     pub fn signpost_event(&self, spid: &OSSignpostID, name: &CStr, format: &CStr, message: &CStr) {
         unsafe {
-            // wrapped_os_signpost_event_emit(self.inner, spid.inner, name.as_ptr(), message.as_ptr())
-            // wrapped_os_signpost_event_emit(self.inner, spid.inner, name.as_ptr(), message.as_ptr())
             wrapped_os_signpost_event_emit(
                 self.inner,
                 spid.inner,
@@ -142,6 +140,7 @@ impl OSSignpostID {
 
 unsafe impl Send for OSSignpostID {}
 unsafe impl Sync for OSSignpostID {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
