@@ -1,9 +1,9 @@
 use crate::sys;
-use crate::OsLog;
+use crate::OSLog;
 use std::ffi::{c_void, CStr};
 
 #[cfg(feature = "signpost")]
-impl OsLog {
+impl OSLog {
     /// Marks an event in your code using a signpost.
     ///
     /// This calls [`os_signpost_event_emit()`] via FFI.
@@ -44,7 +44,7 @@ impl Default for OSSignpostID {
 impl OSSignpostID {
     /// Creates a signpost identifier that's unique among signposts logged to
     /// a specified log.
-    pub fn generate(log: &OsLog) -> OSSignpostID {
+    pub fn generate(log: &OSLog) -> OSSignpostID {
         OSSignpostID {
             inner: unsafe { sys::os_signpost_id_generate(log.inner) },
         }
@@ -55,7 +55,7 @@ impl OSSignpostID {
     ///
     /// Note: don't use this function if the activity needs to cross process
     /// boundaries.
-    pub fn generate_with_pointer<T>(log: &OsLog, object: T) -> OSSignpostID
+    pub fn generate_with_pointer<T>(log: &OSLog, object: T) -> OSSignpostID
     where
         T: ptrplus::AsPtr,
     {
@@ -89,7 +89,7 @@ mod tests {
     /// | simple-signposter | com.signposter | the-category | the-ref-signpost-name      | 0x74f22b67ffaee5d0       | the-default-signpost-message  |
     /// | simple-signposter | com.signposter | the-category | the-ref-signpost-name2     | 0x74f22b67ffaee5d0       | the-default-signpost-message2 |
     fn test_signpost_event_with_various_id_sources() {
-        let log = OsLog::new("com.signposter", "the-category");
+        let log = OSLog::new("com.signposter", "the-category");
 
         // Log 2 events using the default signpost id
         //

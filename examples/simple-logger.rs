@@ -1,8 +1,8 @@
 use log::{debug, error, info, trace, warn, LevelFilter};
-use oslog::OsLogger;
+use oslog::OSLogger;
 
 fn main() {
-    OsLogger::new("com.example.test")
+    OSLogger::new("com.example.test")
         .with_level(LevelFilter::Debug)
         .with_category("Settings", LevelFilter::Trace)
         .init()

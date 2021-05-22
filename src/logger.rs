@@ -1,4 +1,4 @@
-use crate::OsLog;
+use crate::OSLog;
 use dashmap::DashMap;
 use log::{LevelFilter, Log, Metadata, Record};
 
@@ -6,7 +6,7 @@ use log::{LevelFilter, Log, Metadata, Record};
 /// [log](https://crates.io/crates/log) crate.
 /// Requires the "`logger`" feature.
 ///
-/// As opposed to [`crate::OsLog`] and its [Swift/ObjC
+/// As opposed to [`crate::OSLog`] and its [Swift/ObjC
 /// counterpart](https://developer.apple.com/documentation/os/oslog), this
 /// struct corresponds to one `subsystem` and several categories. This is
 /// implemented by holding one logger per `category` along with its max level.
@@ -14,9 +14,9 @@ use log::{LevelFilter, Log, Metadata, Record};
 /// # Example
 ///
 /// ```
-/// use oslog::OsLogger;
+/// use oslog::OSLogger;
 /// use log::{LevelFilter};
-/// OsLogger::new("com.example.oslog")
+/// OSLogger::new("com.example.oslog")
 ///     .with_level(LevelFilter::Trace)
 ///     .with_category("Settings", LevelFilter::Warn)
 ///     .with_category("Database", LevelFilter::Error)
@@ -24,14 +24,14 @@ use log::{LevelFilter, Log, Metadata, Record};
 ///     .init()
 ///     .unwrap();
 /// ```
-pub struct OsLogger {
+pub struct OSLogger {
     subsystem: String,
-    category_loggers: DashMap<String, (Option<LevelFilter>, OsLog)>,
+    category_loggers: DashMap<String, (Option<LevelFilter>, OSLog)>,
 }
 
 /// Implement the [`log::Log`] trait for compatibility with the
 /// [log](https://crates.io/crates/log) crate.
-impl Log for OsLogger {
+impl Log for OSLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         let max_level = self
             .category_loggers
@@ -47,7 +47,7 @@ impl Log for OsLogger {
             let pair = self
                 .category_loggers
                 .entry(record.target().into())
-                .or_insert((None, OsLog::new(&self.subsystem, record.target())));
+                .or_insert((None, OSLog::new(&self.subsystem, record.target())));
 
             let message = std::format!("{}", record.args());
             (*pair).1.with_level(record.level().into(), &message);
@@ -69,9 +69,9 @@ impl From<log::Level> for crate::Level {
     }
 }
 
-/// Builder API for constructing an `OsLogger`.
+/// Builder API for constructing an `OSLogger`.
 ///
-impl OsLogger {
+impl OSLogger {
     /// Creates a new logger using the Builder Pattern.
     ///
     /// Notes:
@@ -84,9 +84,9 @@ impl OsLogger {
     /// # Example
     ///
     /// ```no_run
-    /// use oslog::OsLogger;
+    /// use oslog::OSLogger;
     /// use log::{LevelFilter};
-    /// OsLogger::new("com.example.oslog")
+    /// OSLogger::new("com.example.oslog")
     ///     .with_level(LevelFilter::Trace)
     ///     .with_category("Settings", LevelFilter::Warn)
     ///     .with_category("Database", LevelFilter::Error)
@@ -111,9 +111,9 @@ impl OsLogger {
     /// # Example
     ///
     /// ```
-    /// use oslog::OsLogger;
+    /// use oslog::OSLogger;
     /// use log::{LevelFilter};
-    /// OsLogger::new("com.example.oslog")
+    /// OSLogger::new("com.example.oslog")
     ///     .with_level(LevelFilter::Info)
     ///     .with_category("Settings", LevelFilter::Trace)
     ///     .init()
@@ -135,7 +135,7 @@ impl OsLogger {
         self.category_loggers
             .entry(category.into())
             .and_modify(|(existing_level, _)| *existing_level = Some(level))
-            .or_insert((Some(level), OsLog::new(&self.subsystem, category)));
+            .or_insert((Some(level), OSLog::new(&self.subsystem, category)));
 
         self
     }
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_basic_usage() {
-        OsLogger::new("com.example.oslog")
+        OSLogger::new("com.example.oslog")
             .with_level(LevelFilter::Trace)
             .with_category("Settings", LevelFilter::Warn)
             .with_category("Database", LevelFilter::Error)

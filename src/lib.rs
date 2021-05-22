@@ -4,7 +4,7 @@ mod sys;
 mod logger;
 
 #[cfg(feature = "logger")]
-pub use logger::OsLogger;
+pub use logger::OSLogger;
 
 #[cfg(feature = "signpost")]
 mod signpost;
@@ -32,14 +32,14 @@ pub enum Level {
     Fault = sys::OS_LOG_TYPE_FAULT,
 }
 
-pub struct OsLog {
+pub struct OSLog {
     inner: sys::os_log_t,
 }
 
-unsafe impl Send for OsLog {}
-unsafe impl Sync for OsLog {}
+unsafe impl Send for OSLog {}
+unsafe impl Sync for OSLog {}
 
-impl Drop for OsLog {
+impl Drop for OSLog {
     fn drop(&mut self) {
         unsafe {
             if self.inner != sys::wrapped_get_default_log() {
@@ -49,7 +49,7 @@ impl Drop for OsLog {
     }
 }
 
-impl OsLog {
+impl OSLog {
     pub fn new(subsystem: &str, category: &str) -> Self {
         let subsystem = to_cstr(subsystem);
         let category = to_cstr(category);
@@ -112,31 +112,31 @@ mod tests {
 
     #[test]
     fn test_subsystem_interior_null() {
-        let log = OsLog::new("com.example.oslog\0test", "category");
+        let log = OSLog::new("com.example.oslog\0test", "category");
         log.with_level(Level::Debug, "Hi");
     }
 
     #[test]
     fn test_category_interior_null() {
-        let log = OsLog::new("com.example.oslog", "category\0test");
+        let log = OSLog::new("com.example.oslog", "category\0test");
         log.with_level(Level::Debug, "Hi");
     }
 
     #[test]
     fn test_message_interior_null() {
-        let log = OsLog::new("com.example.oslog", "category");
+        let log = OSLog::new("com.example.oslog", "category");
         log.with_level(Level::Debug, "Hi\0test");
     }
 
     #[test]
     fn test_message_emoji() {
-        let log = OsLog::new("com.example.oslog", "category");
+        let log = OSLog::new("com.example.oslog", "category");
         log.with_level(Level::Debug, "\u{1F601}");
     }
 
     #[test]
     fn test_global_log_with_level() {
-        let log = OsLog::global();
+        let log = OSLog::global();
         log.with_level(Level::Debug, "Debug");
         log.with_level(Level::Info, "Info");
         log.with_level(Level::Default, "Default");
@@ -146,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_global_log() {
-        let log = OsLog::global();
+        let log = OSLog::global();
         log.debug("Debug");
         log.info("Info");
         log.default("Default");
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn test_custom_log_with_level() {
-        let log = OsLog::new("com.example.oslog", "testing");
+        let log = OSLog::new("com.example.oslog", "testing");
         log.with_level(Level::Debug, "Debug");
         log.with_level(Level::Info, "Info");
         log.with_level(Level::Default, "Default");
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_custom_log() {
-        let log = OsLog::new("com.example.oslog", "testing");
+        let log = OSLog::new("com.example.oslog", "testing");
         log.debug("Debug");
         log.info("Info");
         log.default("Default");

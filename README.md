@@ -13,9 +13,9 @@ it.
 
 ```rust
 fn main() {
-    OsLogger::new("com.example.test")
-        .level_filter(LevelFilter::Debug)
-        .category_level_filter("Settings", LevelFilter::Trace)
+    OSLogger::new("com.example.test")
+        .with_level(LevelFilter::Debug)
+        .with_category("Settings", LevelFilter::Trace)
         .init()
         .unwrap();
 

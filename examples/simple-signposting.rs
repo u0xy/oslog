@@ -1,7 +1,7 @@
-use oslog::{c_str, OSSignpostID, OsLog};
+use oslog::{c_str, OSSignpostID, OSLog};
 
 fn main() {
-    let log = OsLog::new("com.signposter", "the-category");
+    let log = OSLog::new("com.signposter", "the-category");
 
     let signpost_id = OSSignpostID::default();
     log.signpost_event(
