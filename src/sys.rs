@@ -9,13 +9,13 @@ use std::{ffi::c_void, os::raw::c_char};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct os_log_s {
+/// Mirror os/log.h line 27
+pub struct OSLogS {
     _unused: [u8; 0],
 }
+pub type os_log_t = *mut OSLogS;
 
-pub type os_log_t = *mut os_log_s;
 pub type os_log_type_t = u8;
-
 pub const OS_LOG_TYPE_DEFAULT: os_log_type_t = 0;
 pub const OS_LOG_TYPE_INFO: os_log_type_t = 1;
 pub const OS_LOG_TYPE_DEBUG: os_log_type_t = 2;

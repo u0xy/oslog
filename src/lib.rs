@@ -7,7 +7,6 @@ mod logger;
 #[cfg(feature = "logger")]
 pub use logger::OsLogger;
 
-use crate::sys::*;
 use std::ffi::{c_void, CStr, CString};
 
 #[inline]
@@ -18,11 +17,11 @@ pub fn to_cstr(message: &str) -> CString {
 
 #[repr(u8)]
 pub enum Level {
-    Debug = OS_LOG_TYPE_DEBUG,
-    Info = OS_LOG_TYPE_INFO,
-    Default = OS_LOG_TYPE_DEFAULT,
-    Error = OS_LOG_TYPE_ERROR,
-    Fault = OS_LOG_TYPE_FAULT,
+    Debug = sys::OS_LOG_TYPE_DEBUG,
+    Info = sys::OS_LOG_TYPE_INFO,
+    Default = sys::OS_LOG_TYPE_DEFAULT,
+    Error = sys::OS_LOG_TYPE_ERROR,
+    Fault = sys::OS_LOG_TYPE_FAULT,
 }
 
 #[cfg(feature = "logger")]
@@ -39,7 +38,7 @@ impl From<log::Level> for Level {
 }
 
 pub struct OsLog {
-    inner: os_log_t,
+    inner: sys::os_log_t,
 }
 
 unsafe impl Send for OsLog {}
@@ -48,8 +47,8 @@ unsafe impl Sync for OsLog {}
 impl Drop for OsLog {
     fn drop(&mut self) {
         unsafe {
-            if self.inner != wrapped_get_default_log() {
-                os_release(self.inner as *mut c_void);
+            if self.inner != sys::wrapped_get_default_log() {
+                sys::os_release(self.inner as *mut c_void);
             }
         }
     }
@@ -60,7 +59,7 @@ impl OsLog {
         let subsystem = to_cstr(subsystem);
         let category = to_cstr(category);
 
-        let inner = unsafe { os_log_create(subsystem.as_ptr(), category.as_ptr()) };
+        let inner = unsafe { sys::os_log_create(subsystem.as_ptr(), category.as_ptr()) };
 
         assert!(!inner.is_null(), "Unexpected null value from os_log_create");
 
@@ -68,7 +67,7 @@ impl OsLog {
     }
 
     pub fn global() -> Self {
-        let inner = unsafe { wrapped_get_default_log() };
+        let inner = unsafe { sys::wrapped_get_default_log() };
 
         assert!(!inner.is_null(), "Unexpected null value for OS_DEFAULT_LOG");
 
@@ -77,41 +76,41 @@ impl OsLog {
 
     pub fn with_level(&self, level: Level, message: &str) {
         let message = to_cstr(message);
-        unsafe { wrapped_os_log_with_type(self.inner, level as u8, message.as_ptr()) }
+        unsafe { sys::wrapped_os_log_with_type(self.inner, level as u8, message.as_ptr()) }
     }
 
     pub fn debug(&self, message: &str) {
         let message = to_cstr(message);
-        unsafe { wrapped_os_log_debug(self.inner, message.as_ptr()) }
+        unsafe { sys::wrapped_os_log_debug(self.inner, message.as_ptr()) }
     }
 
     pub fn info(&self, message: &str) {
         let message = to_cstr(message);
-        unsafe { wrapped_os_log_info(self.inner, message.as_ptr()) }
+        unsafe { sys::wrapped_os_log_info(self.inner, message.as_ptr()) }
     }
 
     pub fn default(&self, message: &str) {
         let message = to_cstr(message);
-        unsafe { wrapped_os_log_default(self.inner, message.as_ptr()) }
+        unsafe { sys::wrapped_os_log_default(self.inner, message.as_ptr()) }
     }
 
     pub fn error(&self, message: &str) {
         let message = to_cstr(message);
-        unsafe { wrapped_os_log_error(self.inner, message.as_ptr()) }
+        unsafe { sys::wrapped_os_log_error(self.inner, message.as_ptr()) }
     }
 
     pub fn fault(&self, message: &str) {
         let message = to_cstr(message);
-        unsafe { wrapped_os_log_fault(self.inner, message.as_ptr()) }
+        unsafe { sys::wrapped_os_log_fault(self.inner, message.as_ptr()) }
     }
 
     pub fn level_is_enabled(&self, level: Level) -> bool {
-        unsafe { os_log_type_enabled(self.inner, level as u8) }
+        unsafe { sys::os_log_type_enabled(self.inner, level as u8) }
     }
 
     pub fn signpost_event(&self, spid: &OSSignpostID, name: &CStr, format: &CStr, message: &CStr) {
         unsafe {
-            wrapped_os_signpost_event_emit(
+            sys::wrapped_os_signpost_event_emit(
                 self.inner,
                 spid.inner,
                 name.as_ptr(),
@@ -127,13 +126,21 @@ impl OsLog {
 //
 
 pub struct OSSignpostID {
-    inner: os_signpost_id_t,
+    inner: sys::os_signpost_id_t,
 }
 
 impl Default for OSSignpostID {
+    /// Creates a signpost identifier that's not unique but is cheap to
+    /// create.
+    ///
+    /// If only one interval with a given os_log_t and interval name will ever
+    /// be in flight at a time, or if you don't need to distinguish between
+    /// signposts that overlap in time, use this convenience value. This can
+    /// avoid having to share state between begin and end callsites and is
+    /// very cheap to create.
     fn default() -> Self {
         OSSignpostID {
-            inner: OS_SIGNPOST_ID_EXCLUSIVE,
+            inner: sys::OS_SIGNPOST_ID_EXCLUSIVE,
         }
     }
 }
@@ -142,7 +149,7 @@ impl OSSignpostID {
     /// a specified log.
     pub fn generate(log: &OsLog) -> OSSignpostID {
         OSSignpostID {
-            inner: unsafe { os_signpost_id_generate(log.inner) },
+            inner: unsafe { sys::os_signpost_id_generate(log.inner) },
         }
     }
 
@@ -157,7 +164,7 @@ impl OSSignpostID {
     {
         let ptr = object.as_ptr() as *const c_void;
         OSSignpostID {
-            inner: unsafe { os_signpost_id_make_with_pointer(log.inner, ptr) },
+            inner: unsafe { sys::os_signpost_id_make_with_pointer(log.inner, ptr) },
         }
     }
 }
