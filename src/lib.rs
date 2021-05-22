@@ -3,7 +3,6 @@ mod sys;
 
 #[cfg(feature = "logger")]
 mod logger;
-
 #[cfg(feature = "logger")]
 pub use logger::OsLogger;
 
