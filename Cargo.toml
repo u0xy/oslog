@@ -11,16 +11,17 @@ keywords = ["log", "logging", "unified", "macos", "apple"]
 categories = ["development-tools::debugging"]
 
 [features]
-
-default = ["logger"]
+default = ["logger", "signpost"]
 
 # Enables support for the `log` crate
 logger = ["dashmap", "log"]
 
+signpost = []
+
 [dependencies]
 log = { version = "0.4", features = ["std"], optional = true }
 dashmap = { version = "4", optional = true }
-c_str_macro = "1.0.3"
+byte-strings = "0.1.3"
 ptrplus = "1.1.0"
 
 [build-dependencies]

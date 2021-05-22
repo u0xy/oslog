@@ -1,7 +1,4 @@
-use c_str_macro::c_str;
-// use oslog::to_cstr;
-use oslog::OSSignpostID;
-use oslog::OsLog;
+use oslog::{c_str, OSSignpostID, OsLog};
 
 fn main() {
     let log = OsLog::new("com.signposter", "the-category");
