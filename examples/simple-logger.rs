@@ -9,17 +9,17 @@ fn main() {
         .unwrap();
 
     // Maps to OS_LOG_TYPE_DEBUG
-    trace!(target: "Settings", "This is a Trace message");
+    trace!(target: "Settings", "This is a Debug message sent to the Settings category");
 
     // Maps to OS_LOG_TYPE_INFO
-    debug!("This is a Debug message");
+    debug!("This is an Info message with no category");
 
     // Maps to OS_LOG_TYPE_DEFAULT
-    info!(target: "Parsing", "This is an Info message");
+    info!(target: "Parsing", "This is an Default message sent to the Parsing category which is created on the fly");
 
     // Maps to OS_LOG_TYPE_ERROR
-    warn!("This is a Warn message");
+    warn!("This is an Error message with no category");
 
     // Maps to OS_LOG_TYPE_FAULT
-    error!("This is an Error message");
+    error!("This is a Fault message with no category");
 }

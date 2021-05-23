@@ -31,6 +31,7 @@ pub struct OSLogger {
 
 /// Implement the [`log::Log`] trait for compatibility with the
 /// [log](https://crates.io/crates/log) crate.
+///
 impl Log for OSLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         let max_level = self

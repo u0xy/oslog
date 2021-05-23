@@ -1,53 +1,139 @@
 # OSLog
 
-A minimal wrapper around Apple's [Unified Logging
-System](https://developer.apple.com/documentation/os/logging). On macOS, this allows you
-to capture telemetry from your Rust programs for debugging and performance
-analysis.
+<!-- cargo-sync-readme start -->
 
-## Debugging
-
-For debugging, the telemetry sent to the macOS Logging system is available in
-the [Console App](https://support.apple.com/guide/console/welcome/mac).
-
-![Console App](images/console-app.png)
+A minimal wrapper around Apple's [Unified Logging System]. On macOS, this
+allows you to capture telemetry from your Rust programs for debugging and
+performance analysis.
 
 
-By default support for the [log](https://docs.rs/log) crate is provided, but if
-you would prefer just to use the lower level bindings you can disable the
-default `logger` feature.
+## Overview
 
-When making use of targets (`info!(target: "t", "m");`), you should be aware
-that a new log is allocated and stored in a map for the lifetime of the program.
-I expect log allocations are extremely small, but haven't attempted to verify
-it.
+This crate provides two facilities:
 
-# Example
+- the first one focuses on compatibility with the [log] crate and
+thus provides only message logging to category loggers (named "targets" in
+the [log] crate).
+- the second one models as closely as it can the [Swift/ObjC OSLog API]:
+this includes
+  - usual message logging to category loggers,
+  - activity tracing across categories
+  - and [performance logging with signposts] for very detailed profiling
+  with [Xcode Instruments].
+
+To help you choose a facility, let's briefly explain logging features and
+tools on macOS.
+
+1. Both facilities can be used to make your program send log messages to
+   the macOS Logging system. Note that, because macOS has deprecated
+   sending logs to `/var/log` some time ago, in order to search and view
+   the messages, you can use the [log command line tool] or the [Console
+   App] or one its [alternatives]. Besides the Apple official docs, this
+   article, although somewhat dated, provides a [good overview of the
+   Unified Logging System].
+
+![Console App Window](https://raw.githubusercontent.com/u0xy/oslog/screenshots/screenshots/console-app.png)
+
+2. The `OSLog` facility also allows you to trace [Activities] across
+   categories. You can think of this as a semantic layer on top of
+   potentially many concurrent messages logged.
+
+![Console App Activities](https://raw.githubusercontent.com/u0xy/oslog/screenshots/screenshots/console-app-activities.png)
+
+3. For performance analysis, the `OSLog` facility helps you instrument
+   your code for profiling with "signpost" markers. Then you profile your
+   program by running it in a specific run environment: on macOS, this
+   environment is provided by the [`xctrace`] command line tool which
+   generates a trace bundle. In practice, you run:
+
+```sh
+xcrun xctrace --template "Time Profiler" \
+    --launch -- ./target/release/examples/simple-signposting
+```
+
+To make this even simpler, the Rust ecosystem provides the
+[cargo-instruments] crate to do exactly this, with a nice Cargo
+integration (and is available via `brew install cargo-instruments`):
+
+```sh
+cargo instruments -t "Time Profiler" --example simple-signposting
+```
+
+The trace bundle should be opened with [Xcode Instruments]
+
+![Instruments Systrace Profiler](https://raw.githubusercontent.com/u0xy/oslog/screenshots/screenshots/instruments-system-trace.png)
+
+With this in mind, you can choose which of the facilities you want to use.
+
+
+## Using `oslog::OSLogger` for `log` crate support
+
+Because it depends on the `log` crate, this logger is available with the
+`"logger"` feature.
+
+As a reminder, on macOS, the logging levels are `Debug`, `Info`,
+`Default`, `Error`, and `Fault`. They map to the level of the [log] crate
+as follows
+
+| OSLog level | log crate level |
+| ---         | ---             |
+| Debug       | Trace           |
+| Info        | Debug           |
+| Default     | Info            |
+| Error       | Warn            |
+| Fault       | Error           |
+
+Here is a full example.
 
 ```rust
-fn main() {
-    OSLogger::new("com.example.test")
-        .with_level(LevelFilter::Debug)
-        .with_category("Settings", LevelFilter::Trace)
-        .with_category("Parsing", LevelFilter::Info)
-        .init()
-        .unwrap();
+OSLogger::new("com.example.test")
+    .with_level(LevelFilter::Debug)
+    .with_category("Settings", LevelFilter::Trace)
+    .with_category("Parsing", LevelFilter::Info)
+    .init()
+    .unwrap();
 
-    // Maps to OS_LOG_TYPE_DEBUG
-    trace!(target: "Settings", "Trace message to the `Settings` category");
+trace!(target: "Settings", "Debug message to the `Settings` category");
+debug!("Info message with no category");
+info!(target: "Parsing", "Default message to the `Parsing` category");
+warn!("Error message with no category");
+error!("Fault message with no category");
+```
 
-    // Maps to OS_LOG_TYPE_INFO
-    debug!("Debug");
+Each category logger is allocated and stored in a map for the lifetime of
+the program. If you care about not allocating during logging (as you
+should), make sure
 
-    // Maps to OS_LOG_TYPE_DEFAULT
-    info!(target: "Parsing", "Info");
+- you have created all category loggers beforehand, as shown above,
+- and make sure you pass `&CStr` arguments, instead of `&str`.
 
-    // Maps to OS_LOG_TYPE_ERROR
-    warn!("Warn");
+Otherwise, if you log to a non-existing "target", the corresponding
+category logger will be allocated once before logging. The allocations are
+extremely small, but still. In the same vein, if you pass `&str` messages
+instead of `&CStr`, a null-terminating `CString` will have to be created
+for the FFI call to the C functions.
 
-    // Maps to OS_LOG_TYPE_FAULT
-    error!("Error");
-}
+When making use of targets (`info!(target: "t", "m");`), you should be
+aware that a new log is allocated and stored in a map for the lifetime of
+the program.  I expect log allocations are extremely small, but haven't
+attempted to verify it.
+
+
+## Using `oslog::OSLog` for logging and profiling
+
+Logging Quickstart
+
+```rust
+use oslog::{OSLog, cstr}
+
+let log_settings = OSLog::new("com.example.test", "Settings");
+//                             subsystem ~~^   category ~^
+
+log_settings.debug("This is a Debug message");
+log_settings.info("This is a Info message");
+log_settings.default("This is an Default message");
+log_settings.error("This is an Error message");
+log_settings.fault("This is a Fault message");
 ```
 
 
@@ -64,5 +150,31 @@ crate.
 * Tracing
 * Native support for line numbers and file names.
 
+[Unified Logging System]: https://developer.apple.com/documentation/os/logging
+[Swift/ObjC OSLog API]: https://developer.apple.com/documentation/os/logging
+[Console App]: https://support.apple.com/guide/console/welcome/mac
+[alternatives]: https://eclecticlight.co/consolation-t2m2-and-log-utilities/
+[Activities]: https://developer.apple.com/documentation/os/logging/collecting_log_messages_in_activities
+[log command line tool]: https://developer.apple.com/documentation/os/logging/viewing_log_messages
+[log]: https://docs.rs/log
+[cargo-instruments]: https://crates.io/crates/cargo-instruments
+[performance logging with signposts]: https://developer.apple.com/videos/play/wwdc2018/405/
+[Xcode Instruments]: https://developer.apple.com/library/archive/documentation/ToolsLanguages/Conceptual/Xcode_Overview/MeasuringPerformance.html
+[`xctrace`]: https://developer.apple.com/documentation/xcode-release-notes/xcode-12-release-notes
+[good overview of the Unified Logging System]: https://eclecticlight.co/2018/03/19/macos-unified-log-1-why-what-and-how/
+
+
+<!-- cargo-sync-readme end -->
+
+# Missing features
+
+* Activities
+* Tracing
+* Native support for line numbers and file names.
+
+[Unified Logging System]: https://developer.apple.com/documentation/os/logging
+[Console App]: https://support.apple.com/guide/console/welcome/mac
 [cargo-instruments]: https://crates.io/crates/cargo-instruments
 [Xcode Instruments]: https://developer.apple.com/library/archive/documentation/ToolsLanguages/Conceptual/Xcode_Overview/MeasuringPerformance.html
+
+<!-- cargo-sync-readme end -->

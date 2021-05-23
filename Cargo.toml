@@ -21,7 +21,7 @@ signpost = []
 [dependencies]
 log = { version = "0.4", features = ["std"], optional = true }
 dashmap = { version = "4", optional = true }
-byte-strings = "0.1.3"
+cstr = "0.2.8"
 ptrplus = "1.1.0"
 
 [build-dependencies]
