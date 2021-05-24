@@ -1,6 +1,7 @@
 use crate::OSLog;
 use dashmap::DashMap;
 use log::{LevelFilter, Log, Metadata, Record};
+use std::ffi::CString;
 
 /// Defines a logger meant to be used with the
 /// [log](https://crates.io/crates/log) crate.
@@ -50,7 +51,8 @@ impl Log for OSLogger {
                 .entry(record.target().into())
                 .or_insert((None, OSLog::new(&self.subsystem, record.target())));
 
-            let message = std::format!("{}", record.args());
+            let message =
+                CString::new(std::format!("{}", record.args())).expect("CString::new failed");
             (*pair).1.with_level(record.level().into(), &message);
         }
     }
