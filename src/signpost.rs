@@ -11,8 +11,16 @@ impl OSLog {
     /// [`os_signpost_event_emit()`]: https://developer.apple.com/documentation/os/os_signpost_event_emit?language=objc.
     pub fn signpost_event(&self, spid: &OSSignpostID, name: &CStr, format: &CStr, message: &CStr) {
         unsafe {
-            sys::wrapped_os_signpost_event_emit(
+            // sys::wrapped_os_signpost_event_emit(
+            //     self.inner,
+            //     spid.inner,
+            //     name.as_ptr(),
+            //     format.as_ptr(),
+            //     message.as_ptr(),
+            // )
+            sys::va_os_signpost_event_emit_with_type(
                 self.inner,
+                sys::OS_SIGNPOST_EVENT,
                 spid.inner,
                 name.as_ptr(),
                 format.as_ptr(),

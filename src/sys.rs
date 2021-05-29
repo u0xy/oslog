@@ -55,6 +55,11 @@ pub const OS_SIGNPOST_ID_NULL: os_signpost_id_t = 0;
 pub const OS_SIGNPOST_ID_INVALID: os_signpost_id_t = u64::MAX; // ~0, all 1
 pub const OS_SIGNPOST_ID_EXCLUSIVE: os_signpost_id_t = 0xEEEEB0B5B2B2EEEE;
 
+pub type os_signpost_type_t = u8;
+pub const OS_SIGNPOST_EVENT: os_signpost_type_t = 0;
+pub const OS_SIGNPOST_INTERVAL_BEGIN: os_signpost_type_t = 1;
+pub const OS_SIGNPOST_INTERVAL_END: os_signpost_type_t = 2;
+
 /// Wrappers defined in wrapper.c because most of the os_log_* APIs are macros.
 extern "C" {
     pub fn wrapped_os_signpost_event_emit(
@@ -63,6 +68,13 @@ extern "C" {
         name: *const c_char,
         format: *const c_char,
         message: *const c_char,
+    );
+    pub fn va_os_signpost_event_emit_with_type(
+        log: os_log_t,
+        spty: os_signpost_type_t,
+        spid: os_signpost_id_t,
+        name: *const c_char,
+        ...
     );
 }
 
